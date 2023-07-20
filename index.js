@@ -4,11 +4,14 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const userData = require("./DB/userSchema.js");
+const productData = require("./DB/ProductSchema.js");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-
 app.use(express.json());
 app.use(cors({ origin: '*' }));
+const axios = require("axios");
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////SIGNUPAPI
 app.post("/register", async (req, res) => {
@@ -41,7 +44,6 @@ app.post('/login', async (req, res) => {
         let user = await userData.findOne({ email });
         if (user) {
             if (user.password === password) {
-                console.log(user)
                 const payLoad = { userId: user._id, name: user.fullname };
                 const token = jwt.sign(payLoad, secretKey, { expiresIn: "1h" });
                 return res.status(201).json({ token: token });
@@ -56,5 +58,36 @@ app.post('/login', async (req, res) => {
     }
 });
 
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////ProductAPI
+
+app.get("/images", async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const pageSize = 10;
+        const skip = (page - 1) * pageSize;
+        const totalRecords = await productData.countDocuments();
+        const totalPages = Math.ceil(totalRecords / pageSize);
+        if (page < 0) {
+            return res.status(409).json("Page Value can't be Less than 1");
+        }
+        if (page > totalPages) {
+            return res.status(409).json("No More Images Found");
+        }
+        const products = await productData.find()
+            .skip(skip)
+            .limit(pageSize)
+            .lean();
+        res.json({
+            currentPage: page,
+            totalPages: totalPages,
+            products: products,
+        });
+    } catch (error) {
+        console.error("Error fetching products:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
 
 app.listen(5050, () => console.log("Server Started"));
