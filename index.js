@@ -85,9 +85,51 @@ app.get("/images", async (req, res) => {
             products: products,
         });
     } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error(+error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
+//////////////////////////////////////////////////////////////////////////////////////////////////favouriteFunctionality
+app.post("/favourite", async (req, res) => {
+    const { action, userId, prodId } = req.body;
+    try {
+        const user = await userData.findById(userId);
+        if (user) {
+            const check = user.favourites.find(val => val.imgId.toString() === prodId);
+            if (!check && action === "setLike") {
+                user.favourites.push({ imgId: prodId });
+                await user.save();
+                return res.status(201).json("Image added to your favourites");
+            } else if (check && action === "setDelete") {
+                const checkIndex = user.favourites.findIndex(val => val.imgId.toString() === prodId);
+                if (checkIndex >= 0) {
+                    user.favourites.splice(checkIndex, 1)
+                    await user.save()
+                    return res.status(201).json(" Shot Removed from favourites ");
+                }
+            } else {
+                return res.status(409).json("Image is already in your favourites");
+            }
+        }
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: `${error}` });
+    }
+})
+
+//////////////////////////////////////////////////////////////////////////////////////////////////favouritesData
+
+app.post("/favouriteData", async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const favourites = await userData.findById(userId).populate("favourites.imgId");
+        return res.status(201).json(favourites);
+    }
+    catch (error) {
+        res.status(500).json({ error: `${error}` });
+    }
+})
+
 
 app.listen(5050, () => console.log("Server Started"));

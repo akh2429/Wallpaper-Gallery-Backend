@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
         {
             imgId: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: "gallerydata",
+                ref: "gallerydatas",
                 unique: false,
             }
         }
